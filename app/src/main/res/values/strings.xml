@@ -1,0 +1,33 @@
+<resources>
+    <string name="app_name">IF570_LAB_UTS_MarioRichieLim_00000067355</string>
+
+    <string name="home">Home</string>
+    <string name="history">History</string>
+    <string name="profile">Profile</string>
+    <string name="date">Date</string>
+    <string name="status">Status</string>
+    <string name="date_text">Current Date:</string>
+    <string name="time_text">Current Time:</string>
+    <string name="attendance_photo">Attendance Photo</string>
+    <string name="take_attendance">Take Attendance</string>
+    <string name="upload_image">Upload Image</string>
+    <string name="submit_attendance">Submit Attendance</string>
+
+
+    <string name="email">Email</string>
+    <string name="password">Password</string>
+    <string name="register">Register</string>
+
+    <string name="submit_button">SUBMIT</string>
+
+    <string name="bottom_menu_add">add</string>
+    <string name="bottom_menu_list">list</string>
+
+    <string name="login">Login</string>
+
+    <string name="email_input_message">Enter Email</string>
+    <string name="password_input_message">Enter Password</string>
+    <string name="name_input_message">Enter Username</string>
+
+    <string name="register_button">Register</string>
+</resources>

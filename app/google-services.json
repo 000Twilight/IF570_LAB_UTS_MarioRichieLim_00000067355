@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "814026594979",
+    "project_id": "uts-map-e470f",
+    "storage_bucket": "uts-map-e470f.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:814026594979:android:7a2610e40bb65f20c67d16",
+        "android_client_info": {
+          "package_name": "com.example.if570_lab_uts_mariorichielim_00000067355"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "814026594979-b2uq4953q8i4mrn6bvfa1tvvjgi52040.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.if570_lab_uts_mariorichielim_00000067355",
+            "certificate_hash": "15ccba862425265a5b5ba926064d87e7e441302b"
+          }
+        },
+        {
+          "client_id": "814026594979-uvkkn33cis0fe424sqr52mtn0ltsd0bm.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCB5bkmgsNVoFRcwt0MNSfufZcriT1Ctwo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "814026594979-uvkkn33cis0fe424sqr52mtn0ltsd0bm.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
