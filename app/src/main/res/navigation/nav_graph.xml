@@ -2,35 +2,21 @@
 <navigation xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/nav_graph.xml"
+    android:id="@+id/nav_graph"
     app:startDestination="@id/homeFragment">
+
     <fragment
-        android:id="@+id/homeFragment"
+        android:id="@id/homeFragment"
         android:name="com.example.if570_lab_uts_mariorichielim_00000067355.HomeFragment"
         android:label="Home" />
+
     <fragment
-        android:id="@+id/historyFragment"
+        android:id="@id/historyFragment"
         android:name="com.example.if570_lab_uts_mariorichielim_00000067355.HistoryFragment"
         android:label="History" />
+
     <fragment
-        android:id="@+id/profileFragment"
+        android:id="@id/profileFragment"
         android:name="com.example.if570_lab_uts_mariorichielim_00000067355.ProfileFragment"
         android:label="Profile" />
-    <fragment
-        android:id="@+id/loginFragment"
-        android:name="com.example.if570_lab_uts_mariorichielim_00000067355.LoginFragment"
-        android:label="fragment_login"
-        tools:layout="@layout/fragment_login" >
-        <action
-            android:id="@+id/action_loginFragment_to_registerFragment"
-            app:destination="@id/registerFragment" />
-        <action
-            android:id="@+id/action_loginFragment_to_homeFragment"
-            app:destination="@id/homeFragment" />
-    </fragment>
-    <fragment
-        android:id="@+id/registerFragment"
-        android:name="com.example.if570_lab_uts_mariorichielim_00000067355.RegisterFragment"
-        android:label="fragment_register"
-        tools:layout="@layout/fragment_register" />
 </navigation>

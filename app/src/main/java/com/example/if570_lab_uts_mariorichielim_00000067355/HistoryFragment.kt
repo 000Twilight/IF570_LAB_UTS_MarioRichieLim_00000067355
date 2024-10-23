@@ -1,7 +1,9 @@
 package com.example.if570_lab_uts_mariorichielim_00000067355
 
 import android.os.Bundle
+import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -14,6 +16,12 @@ class HistoryFragment : Fragment(R.layout.fragment_history) {
     private lateinit var firestore: FirebaseFirestore
     private lateinit var recyclerView: RecyclerView
     private lateinit var historyAdapter: AttendanceAdapter
+
+    override fun onCreateView(
+        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
+    ): View? {
+        return inflater.inflate(R.layout.fragment_history, container, false)
+    }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -31,7 +39,7 @@ class HistoryFragment : Fragment(R.layout.fragment_history) {
 
     private fun loadAttendanceHistory() {
         val userId = FirebaseAuth.getInstance().currentUser!!.uid
-        firestore.collection("attendances")
+        firestore.collection("attendance")
             .whereEqualTo("userId", userId)
             .get()
             .addOnSuccessListener { result ->

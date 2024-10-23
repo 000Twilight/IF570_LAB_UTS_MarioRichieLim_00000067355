@@ -13,6 +13,9 @@
     <string name="upload_image">Upload Image</string>
     <string name="submit_attendance">Submit Attendance</string>
 
+    <string name="nim">NIM</string>
+    <string name="name">Name</string>
+    <string name="save">Save</string>
 
     <string name="email">Email</string>
     <string name="password">Password</string>
