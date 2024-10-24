@@ -1,5 +1,6 @@
 package com.example.if570_lab_uts_mariorichielim_00000067355
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
@@ -22,22 +23,22 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         auth = FirebaseAuth.getInstance()
-
         bottomNavigationView = findViewById(R.id.bottom_nav)
 
         val navHostFragment = supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
         navController = navHostFragment.navController
         NavigationUI.setupWithNavController(bottomNavigationView, navController)
 
-        if (auth.currentUser == null) {
-            Log.d("MainActivity", "No user logged in, redirecting to LoginActivity.")
+        val sharedPreferences = getSharedPreferences("USER_SESSION", Context.MODE_PRIVATE)
+        val isLoggedIn = sharedPreferences.getBoolean("IS_LOGGED_IN", false)
+
+        if (isLoggedIn && auth.currentUser != null) {
+            navController.navigate(R.id.homeFragment)
+            showBottomNavigation()
+        } else {
             val intent = Intent(this, LoginActivity::class.java)
             startActivity(intent)
             finish()
-        } else {
-            navController.navigate(R.id.homeFragment)
-            showBottomNavigation()
-            Log.d("MainActivity", "User logged in, navigating to HomeFragment.")
         }
 
         bottomNavigationView.setOnNavigationItemSelectedListener { item ->

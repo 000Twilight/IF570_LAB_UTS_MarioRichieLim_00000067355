@@ -22,11 +22,19 @@
     <string name="register">Register</string>
 
     <string name="submit_button">SUBMIT</string>
+    <string name="logout">Log out</string>
 
     <string name="bottom_menu_add">add</string>
     <string name="bottom_menu_list">list</string>
 
     <string name="login">Login</string>
+
+    <string name="clock_in">Clock In: %1$s</string>
+    <string name="clock_out">Clock Out: %1$s</string>
+    <string name="no_clock_in">Clock In: -</string>
+    <string name="no_clock_out">Clock Out: -</string>
+    <string name="confirm_attendance">Do you want to confirm this attendance?</string>
+    <string name="confirm_attendance_title">Confirm Attendance</string>
 
     <string name="email_input_message">Enter Email</string>
     <string name="password_input_message">Enter Password</string>

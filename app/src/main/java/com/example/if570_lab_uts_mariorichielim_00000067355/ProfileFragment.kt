@@ -1,5 +1,7 @@
 package com.example.if570_lab_uts_mariorichielim_00000067355
 
+import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -31,22 +33,19 @@ class ProfileFragment : Fragment(R.layout.fragment_profile) {
         auth = FirebaseAuth.getInstance()
         firestore = FirebaseFirestore.getInstance()
 
-        // UI components
         val nameTextView = view.findViewById<TextView>(R.id.profile_name)
         val emailTextView = view.findViewById<TextView>(R.id.profile_email)
         val statusTextView = view.findViewById<TextView>(R.id.profile_status)
         val nameInput = view.findViewById<TextInputEditText>(R.id.profile_name_input)
         val nimInput = view.findViewById<TextInputEditText>(R.id.profile_nim_input)
         val saveButton = view.findViewById<Button>(R.id.profile_save_button)
+        val logoutButton = view.findViewById<Button>(R.id.profile_logout_button)
 
-        // Get the current user
         val user = auth.currentUser
 
         if (user != null) {
-            // Set user's email
             emailTextView.text = user.email ?: "No Email"
 
-            // Load existing profile data
             firestore.collection("users").document(user.uid).get()
                 .addOnSuccessListener { document ->
                     if (document != null) {
@@ -55,11 +54,10 @@ class ProfileFragment : Fragment(R.layout.fragment_profile) {
                         nimInput.setText(document.getString("nim"))
                     }
                 }
-                .addOnFailureListener { e ->
+                .addOnFailureListener {
                     Toast.makeText(context, "Failed to load profile", Toast.LENGTH_SHORT).show()
                 }
 
-            // Check today's attendance status
             val currentDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
 
             firestore.collection("attendance")
@@ -68,19 +66,16 @@ class ProfileFragment : Fragment(R.layout.fragment_profile) {
                 .get()
                 .addOnSuccessListener { documents ->
                     if (documents.isEmpty) {
-                        // No attendance record for today
                         statusTextView.text = "No attendance for today"
                     } else {
-                        // Check if it's Clock In or Clock Out
                         val attendance = documents.first().toObject(Attendance::class.java)
                         statusTextView.text = if (attendance.clockIn) "Clocked In" else "Not Clocked In"
                     }
                 }
-                .addOnFailureListener { e ->
+                .addOnFailureListener {
                     statusTextView.text = "Failed to fetch status"
                 }
 
-            // Save profile data
             saveButton.setOnClickListener {
                 val name = nameInput.text.toString().trim()
                 val nim = nimInput.text.toString().trim()
@@ -98,10 +93,27 @@ class ProfileFragment : Fragment(R.layout.fragment_profile) {
                             nameTextView.text = name
                             Toast.makeText(context, "Profile saved", Toast.LENGTH_SHORT).show()
                         }
-                        .addOnFailureListener { e ->
+                        .addOnFailureListener {
                             Toast.makeText(context, "Failed to save profile", Toast.LENGTH_SHORT).show()
                         }
                 }
+            }
+
+            // Logout Button Click Listener
+            logoutButton.setOnClickListener {
+                auth.signOut() // Firebase sign out
+
+                val sharedPreferences = requireContext().getSharedPreferences("USER_SESSION", Context.MODE_PRIVATE)
+                val editor = sharedPreferences.edit()
+                editor.putBoolean("IS_LOGGED_IN", false)
+                editor.apply()
+
+                // Redirect to LoginActivity
+                val intent = Intent(requireContext(), LoginActivity::class.java)
+                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                startActivity(intent)
+
+                requireActivity().finish() // Finish the activity
             }
         } else {
             Toast.makeText(context, "User not logged in", Toast.LENGTH_SHORT).show()

@@ -9,41 +9,45 @@
     android:padding="16dp"
     android:background="@color/white">
 
-    <!-- Display current date -->
     <TextView
         android:id="@+id/date_text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:layout_marginTop="16dp"
-        android:text="@string/date_text"
         android:textColor="@color/black"
         android:textSize="18sp" />
 
-    <!-- Display current time -->
     <TextView
-        android:id="@+id/time_text"
+        android:id="@+id/clock_in_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginTop="8dp"
+        android:textColor="@color/black"
+        android:textSize="16sp"
+        android:text="Clock In: -" />
+
+    <TextView
+        android:id="@+id/clock_out_text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:layout_marginTop="4dp"
-        android:text="@string/time_text"
         android:textColor="@color/black"
-        android:textSize="18sp" />
+        android:textSize="16sp"
+        android:text="Clock Out: -" />
 
-    <!-- Image to display attendance photo -->
     <ImageView
         android:id="@+id/attendance_image"
         android:layout_width="200dp"
         android:layout_height="200dp"
         android:layout_gravity="center"
         android:layout_marginTop="20dp"
-        android:layout_marginEnd="8dp"
         android:contentDescription="@string/attendance_photo"
         android:scaleType="centerCrop"
-        android:background="@drawable/baseline_add_a_photo_24" /> <!-- Placeholder before image is loaded -->
+        android:background="@drawable/baseline_add_a_photo_24" />
 
-    <!-- Button to take attendance -->
     <Button
         android:id="@+id/take_attendance_button"
         android:layout_width="wrap_content"
@@ -52,7 +56,6 @@
         android:layout_marginTop="16dp"
         android:textSize="18sp"/>
 
-    <!-- Button to upload image -->
     <Button
         android:id="@+id/upload_image_button"
         android:layout_width="wrap_content"
@@ -60,16 +63,6 @@
         android:text="@string/upload_image"
         android:layout_marginTop="16dp"
         android:textSize="18sp"
-        android:visibility="gone" /> <!-- Initially hidden until an image is taken -->
-
-    <!-- Button to submit attendance -->
-    <Button
-        android:id="@+id/submit_button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/submit_attendance"
-        android:layout_marginTop="16dp"
-        android:textSize="18sp"
-        android:enabled="false" /> <!-- Disabled initially, enabled after taking photo -->
+        android:visibility="gone" />
 
 </LinearLayout>
