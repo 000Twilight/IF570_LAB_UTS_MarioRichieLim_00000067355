@@ -6,8 +6,7 @@
     android:orientation="vertical"
     android:id="@+id/homeFragment"
     android:gravity="center"
-    android:padding="16dp"
-    android:background="@color/white">
+    android:padding="16dp" >
 
     <TextView
         android:id="@+id/date_text"
@@ -15,7 +14,14 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:layout_marginTop="16dp"
-        android:textColor="@color/black"
+        android:textSize="18sp" />
+
+    <TextView
+        android:id="@+id/time_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginTop="8dp"
         android:textSize="18sp" />
 
     <TextView
@@ -24,9 +30,8 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:layout_marginTop="8dp"
-        android:textColor="@color/black"
         android:textSize="16sp"
-        android:text="Clock In: -" />
+        android:text="@string/no_clock_in" />
 
     <TextView
         android:id="@+id/clock_out_text"
@@ -34,9 +39,8 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:layout_marginTop="4dp"
-        android:textColor="@color/black"
         android:textSize="16sp"
-        android:text="Clock Out: -" />
+        android:text="@string/no_clock_out" />
 
     <ImageView
         android:id="@+id/attendance_image"

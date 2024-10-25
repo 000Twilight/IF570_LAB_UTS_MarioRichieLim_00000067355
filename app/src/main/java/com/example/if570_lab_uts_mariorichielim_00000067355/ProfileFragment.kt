@@ -13,6 +13,7 @@ import androidx.fragment.app.Fragment
 import com.google.android.material.textfield.TextInputEditText
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.storage.FirebaseStorage
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -20,6 +21,7 @@ class ProfileFragment : Fragment(R.layout.fragment_profile) {
 
     private lateinit var auth: FirebaseAuth
     private lateinit var firestore: FirebaseFirestore
+    private lateinit var storageRef: FirebaseStorage
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -32,6 +34,7 @@ class ProfileFragment : Fragment(R.layout.fragment_profile) {
 
         auth = FirebaseAuth.getInstance()
         firestore = FirebaseFirestore.getInstance()
+        storageRef = FirebaseStorage.getInstance()
 
         val nameTextView = view.findViewById<TextView>(R.id.profile_name)
         val emailTextView = view.findViewById<TextView>(R.id.profile_email)
@@ -58,23 +61,13 @@ class ProfileFragment : Fragment(R.layout.fragment_profile) {
                     Toast.makeText(context, "Failed to load profile", Toast.LENGTH_SHORT).show()
                 }
 
-            val currentDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-
-            firestore.collection("attendance")
-                .whereEqualTo("userId", user.uid)
-                .whereEqualTo("date", currentDate)
-                .get()
-                .addOnSuccessListener { documents ->
-                    if (documents.isEmpty) {
-                        statusTextView.text = "No attendance for today"
-                    } else {
-                        val attendance = documents.first().toObject(Attendance::class.java)
-                        statusTextView.text = if (attendance.clockIn) "Clocked In" else "Not Clocked In"
-                    }
+            AttendanceCheck.checkAttendanceStatus(requireContext(), storageRef) { isClockIn, isClockOut ->
+                statusTextView.text = when {
+                    isClockIn && !isClockOut -> "Clocked In"
+                    isClockIn && isClockOut -> "Clocked Out"
+                    else -> "No attendance for today"
                 }
-                .addOnFailureListener {
-                    statusTextView.text = "Failed to fetch status"
-                }
+            }
 
             saveButton.setOnClickListener {
                 val name = nameInput.text.toString().trim()
@@ -99,21 +92,19 @@ class ProfileFragment : Fragment(R.layout.fragment_profile) {
                 }
             }
 
-            // Logout Button Click Listener
             logoutButton.setOnClickListener {
-                auth.signOut() // Firebase sign out
+                auth.signOut()
 
                 val sharedPreferences = requireContext().getSharedPreferences("USER_SESSION", Context.MODE_PRIVATE)
                 val editor = sharedPreferences.edit()
                 editor.putBoolean("IS_LOGGED_IN", false)
                 editor.apply()
 
-                // Redirect to LoginActivity
                 val intent = Intent(requireContext(), LoginActivity::class.java)
                 intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                 startActivity(intent)
 
-                requireActivity().finish() // Finish the activity
+                requireActivity().finish()
             }
         } else {
             Toast.makeText(context, "User not logged in", Toast.LENGTH_SHORT).show()

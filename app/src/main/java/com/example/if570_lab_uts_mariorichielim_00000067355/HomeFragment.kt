@@ -10,6 +10,7 @@ import android.os.Environment
 import android.os.Handler
 import android.os.Looper
 import android.provider.MediaStore
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -37,12 +38,14 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
     private lateinit var imageView: ImageView
     private lateinit var uploadButton: Button
     private lateinit var photoUri: Uri
+    private lateinit var timeTextView: TextView
     private lateinit var dateTextView: TextView
     private lateinit var clockInTextView: TextView
     private lateinit var clockOutTextView: TextView
     private lateinit var currentDate: String
     private lateinit var currentTime: String
     private var capturedImage: Bitmap? = null
+    private var isClockIn = false
     private var isClockOut = false
     private var clockInTime: String? = null
     private var clockOutTime: String? = null
@@ -71,6 +74,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         storageRef = FirebaseStorage.getInstance()
         imageView = view.findViewById(R.id.attendance_image)
         dateTextView = view.findViewById(R.id.date_text)
+        timeTextView = view.findViewById(R.id.time_text)
         clockInTextView = view.findViewById(R.id.clock_in_text)
         clockOutTextView = view.findViewById(R.id.clock_out_text)
         val takeAttendanceButton = view.findViewById<Button>(R.id.take_attendance_button)
@@ -78,24 +82,33 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
 
         val dateFormat = SimpleDateFormat("EEEE, dd MMMM yyyy", Locale.getDefault())
         currentDate = dateFormat.format(Date())
+        currentTime = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
         dateTextView.text = currentDate
+        timeTextView.text = currentTime
 
         loadAttendanceStatus()
 
+        val historyFragment = parentFragmentManager.findFragmentById(R.id.historyFragment) as? HistoryFragment
+        historyFragment?.refreshAttendanceHistory()
+
         requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
             if (isGranted) {
+                Log.d("HomeFragment", "Camera permission granted")
                 openCamera()
             } else {
+                Log.d("HomeFragment", "Camera permission denied")
                 Toast.makeText(requireContext(), "Camera permission is required to take attendance", Toast.LENGTH_SHORT).show()
             }
         }
 
         takePictureLauncher = registerForActivityResult(ActivityResultContracts.TakePicture()) { success ->
             if (success) {
+                Log.d("HomeFragment", "Picture taken successfully")
                 imageView.setImageURI(photoUri)
                 capturedImage = MediaStore.Images.Media.getBitmap(requireContext().contentResolver, photoUri)
                 uploadButton.visibility = View.VISIBLE
             } else {
+                Log.d("HomeFragment", "Failed to take picture")
                 Toast.makeText(requireContext(), "Camera action failed", Toast.LENGTH_SHORT).show()
             }
         }
@@ -120,52 +133,23 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         currentDate = dateFormat.format(Date())
         currentTime = timeFormat.format(Date())
         dateTextView.text = currentDate
-    }
-
-    private fun checkAttendanceStatus() {
-        val currentDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-        val user = FirebaseAuth.getInstance().currentUser
-
-        if (user == null) {
-            Toast.makeText(requireContext(), "No authenticated user found", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        val userName = user.displayName ?: "Unknown User"
-        storage.collection("attendance")
-            .whereEqualTo("name", userName)
-            .whereEqualTo("date", currentDate)
-            .get()
-            .addOnSuccessListener { documents ->
-                when (documents.size()) {
-                    0 -> {
-                        isClockOut = false
-                        checkAndRequestCameraPermission()
-                    }
-                    1 -> {
-                        isClockOut = true
-                        checkAndRequestCameraPermission()
-                    }
-                    2 -> {
-                        Toast.makeText(requireContext(), "You have already completed attendance for today.", Toast.LENGTH_SHORT).show()
-                    }
-                }
-            }
-            .addOnFailureListener { e ->
-                Toast.makeText(requireContext(), "Error checking attendance: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
+        timeTextView.text = currentTime
+        Log.d("HomeFragment", "Time updated: $currentTime")
     }
 
     private fun checkAndRequestCameraPermission() {
         when {
             requireContext().checkSelfPermission(android.Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED -> {
+                Log.d("HomeFragment", "Camera permission already granted")
                 openCamera()
             }
             shouldShowRequestPermissionRationale(android.Manifest.permission.CAMERA) -> {
+                Log.d("HomeFragment", "Showing camera permission rationale")
                 Toast.makeText(requireContext(), "Camera access is required to take attendance photos", Toast.LENGTH_LONG).show()
                 requestPermissionLauncher.launch(android.Manifest.permission.CAMERA)
             }
             else -> {
+                Log.d("HomeFragment", "Requesting camera permission")
                 requestPermissionLauncher.launch(android.Manifest.permission.CAMERA)
             }
         }
@@ -174,8 +158,10 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
     private fun openCamera() {
         try {
             photoUri = createImageFile()
+            Log.d("HomeFragment", "Opening camera with URI: $photoUri")
             takePictureLauncher.launch(photoUri)
         } catch (e: IOException) {
+            Log.e("HomeFragment", "Failed to create image file", e)
             Toast.makeText(requireContext(), "Failed to create image file", Toast.LENGTH_SHORT).show()
         }
     }
@@ -184,8 +170,15 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         val user = FirebaseAuth.getInstance().currentUser
         val email = user?.email ?: "unknown_user"
         val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
-        val clockStatus = if (isClockOut) "clock_out" else "clock_in"
+
+        val clockStatus = if (isClockOut) {
+            "clock_out"
+        } else {
+            "clock_in"
+        }
+
         val fileName = "${email}_${timeStamp}_${clockStatus}.jpg"
+        Log.d("HomeFragment", "Creating image file: $fileName")
 
         return if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
             val contentValues = ContentValues().apply {
@@ -207,17 +200,80 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         builder.setTitle(getString(R.string.confirm_attendance_title))
         builder.setMessage(getString(R.string.confirm_attendance))
         builder.setPositiveButton("Yes") { _, _ ->
+            Log.d("HomeFragment", "User confirmed attendance")
             uploadAbsensi()
         }
         builder.setNegativeButton("No") { dialog, _ ->
+            Log.d("HomeFragment", "User canceled attendance confirmation")
             dialog.dismiss()
         }
         builder.show()
     }
 
+    private fun checkAttendanceStatus() {
+        val currentDate = SimpleDateFormat("yyyyMMdd", Locale.getDefault()).format(Date())
+        val user = FirebaseAuth.getInstance().currentUser
+
+        if (user == null) {
+            Log.d("HomeFragment", "No authenticated user found")
+            Toast.makeText(requireContext(), "No authenticated user found", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val userName = user.email?.replace(".", "_") ?: "Unknown User"
+        val storagePath = "absensi/${userName}/"
+
+        Log.d("HomeFragment", "Checking attendance status for user: $userName on date: $currentDate")
+
+        storageRef.reference.child(storagePath).listAll()
+            .addOnSuccessListener { result ->
+                var clockInFound = false
+                var clockOutFound = false
+
+                for (fileRef in result.items) {
+                    val fileName = fileRef.name
+                    Log.d("HomeFragment", "Found file: $fileName")
+                    if (fileName.contains(currentDate) && fileName.contains("clock_in")) {
+                        clockInFound = true
+                        Log.d("HomeFragment", "Clock-in file found: $fileName")
+                    }
+                    if (fileName.contains(currentDate) && fileName.contains("clock_out")) {
+                        clockOutFound = true
+                        Log.d("HomeFragment", "Clock-out file found: $fileName")
+                    }
+                }
+
+                when {
+                    clockInFound && !clockOutFound -> {
+                        isClockIn = true
+                        isClockOut = true // Set to true to indicate the next action is clock-out
+                        Log.d("HomeFragment", "User has clocked in but not clocked out")
+                        checkAndRequestCameraPermission() // proceed to clock out
+                    }
+                    clockInFound && clockOutFound -> {
+                        isClockIn = true
+                        isClockOut = true
+                        Log.d("HomeFragment", "User has completed attendance for today")
+                        Toast.makeText(requireContext(), "Attendance completed for today.", Toast.LENGTH_SHORT).show()
+                    }
+                    else -> {
+                        isClockIn = false
+                        isClockOut = false
+                        Log.d("HomeFragment", "User has not clocked in yet")
+                        checkAndRequestCameraPermission() // proceed to clock in
+                    }
+                }
+            }
+            .addOnFailureListener { e ->
+                Log.e("HomeFragment", "Error checking attendance", e)
+                Toast.makeText(requireContext(), "Error checking attendance: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+    }
+
     private fun uploadAbsensi() {
         val user = FirebaseAuth.getInstance().currentUser
         if (user == null) {
+            Log.d("HomeFragment", "No authenticated user found")
             Toast.makeText(requireContext(), "No authenticated user found", Toast.LENGTH_SHORT).show()
             return
         }
@@ -226,67 +282,94 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
         val clockStatus = if (isClockOut) "clock_out" else "clock_in"
         val fileName = "${email}_${timeStamp}_${clockStatus}.jpg"
-        val absensiRef = storage.collection("absensi")
+        val absensiRef = storage.collection("attendance")
             .document(email)
-            .collection("harian")
-            .document(currentDate)
+            .collection(currentDate)
+            .document("status")
 
+        Log.d("HomeFragment", "Uploading attendance: $fileName")
         absensiRef.get().addOnSuccessListener { documentSnapshot ->
-            if (documentSnapshot.exists()) {
-                Toast.makeText(requireContext(), "Anda sudah melakukan absensi hari ini", Toast.LENGTH_SHORT).show()
-            } else {
-                val storageRef = storageRef.reference.child("absensi/${email}/${fileName}")
-                val baos = ByteArrayOutputStream()
-                capturedImage?.compress(Bitmap.CompressFormat.JPEG, 100, baos)
-                val data = baos.toByteArray()
+            val storageRef = storageRef.reference.child("absensi/${email}/${fileName}")
+            val baos = ByteArrayOutputStream()
+            capturedImage?.compress(Bitmap.CompressFormat.JPEG, 100, baos)
+            val data = baos.toByteArray()
 
-                val uploadTask = storageRef.putBytes(data)
-                uploadTask.addOnSuccessListener {
-                    storageRef.downloadUrl.addOnSuccessListener { uri ->
-                        val absensiData = mapOf(
-                            "email" to email,
-                            "photoUrl" to uri.toString(),
-                            "date" to currentDate,
-                            "time" to currentTime,
-                            "clockStatus" to clockStatus
-                        )
-                        absensiRef.set(absensiData).addOnSuccessListener {
-                            Toast.makeText(requireContext(), "Absensi berhasil disimpan", Toast.LENGTH_SHORT).show()
+            val uploadTask = storageRef.putBytes(data)
+            uploadTask.addOnSuccessListener {
+                storageRef.downloadUrl.addOnSuccessListener { uri ->
+                    val absensiData = mutableMapOf(
+                        "email" to email,
+                        "photoUrl" to uri.toString(),
+                        "date" to currentDate,
+                        "time" to currentTime,
+                        "clockInTime" to if (!isClockOut) currentTime else clockInTime,
+                        "clockOutTime" to if (isClockOut) currentTime else null
+                    )
 
-                            if (clockStatus == "clock_in") {
-                                clockInTime = currentDate
-                                clockInTextView.text = getString(R.string.clock_in, currentDate)
-                            } else {
-                                clockOutTime = currentDate
-                                clockOutTextView.text = getString(R.string.clock_out, currentDate)
-                            }
+                    absensiRef.set(absensiData).addOnSuccessListener {
+                        Log.d("HomeFragment", "Attendance successfully saved in Firestore")
+                        Toast.makeText(requireContext(), "Absensi berhasil disimpan", Toast.LENGTH_SHORT).show()
 
-                            uploadButton.visibility = View.GONE
-                            isClockOut = !isClockOut
+                        if (!isClockOut) {
+                            clockInTime = currentTime
+                            clockInTextView.text = getString(R.string.clock_in, currentTime)
+                            isClockIn = true
+                        } else {
+                            clockOutTime = currentTime
+                            clockOutTextView.text = getString(R.string.clock_out, currentTime)
+                            isClockOut = true
                         }
+
+                        uploadButton.visibility = View.GONE
+
+                        // Refresh attendance history
+                        val historyFragment = parentFragmentManager.findFragmentById(R.id.historyFragment) as? HistoryFragment
+                        historyFragment?.refreshAttendanceHistory()
                     }
-                }.addOnFailureListener {
-                    Toast.makeText(requireContext(), "Gagal mengunggah foto", Toast.LENGTH_SHORT).show()
                 }
+            }.addOnFailureListener {
+                Log.e("HomeFragment", "Failed to upload photo", it)
+                Toast.makeText(requireContext(), "Gagal mengunggah foto", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
     private fun loadAttendanceStatus() {
+        val user = FirebaseAuth.getInstance().currentUser
+        if (user == null) {
+            Log.d("HomeFragment", "No authenticated user found")
+            Toast.makeText(requireContext(), "No authenticated user found", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val email = user.email?.replace(".", "_") ?: "unknown_user"
+        val attendanceRef = storage.collection("attendance").document(email).collection("status").document(currentDate)
+
+        attendanceRef.get()
+            .addOnSuccessListener { document ->
+                if (document.exists()) {
+                    clockInTime = document.getString("clockInTime") ?: "-"
+                    clockOutTime = document.getString("clockOutTime") ?: "-"
+                } else {
+                    clockInTime = "-"
+                    clockOutTime = "-"
+                }
+
+                clockInTextView.text = getString(R.string.clock_in, clockInTime)
+                clockOutTextView.text = getString(R.string.clock_out, clockOutTime)
+            }
+            .addOnFailureListener { e ->
+                Log.e("HomeFragment", "Error loading attendance status", e)
+                Toast.makeText(requireContext(), "Error loading attendance status: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+    }
+
+    private fun saveToSharedPref(key: String, value: String) {
         val sharedPref = requireActivity().getPreferences(Context.MODE_PRIVATE) ?: return
-        clockInTime = sharedPref.getString("clock_in_time", null)
-        clockOutTime = sharedPref.getString("clock_out_time", null)
-
-        clockInTextView.text = if (clockInTime != null) {
-            getString(R.string.clock_in, clockInTime)
-        } else {
-            getString(R.string.no_clock_in)
+        with(sharedPref.edit()) {
+            putString(key, value)
+            apply()
         }
-
-        clockOutTextView.text = if (clockOutTime != null) {
-            getString(R.string.clock_out, clockOutTime)
-        } else {
-            getString(R.string.no_clock_out)
-        }
+        Log.d("HomeFragment", "Saved to shared preferences: $key=$value")
     }
 }

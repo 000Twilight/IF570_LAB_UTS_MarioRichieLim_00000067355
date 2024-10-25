@@ -4,5 +4,4 @@ data class Attendance(
     val date: String = "",
     val time: String = "",
     val photoUrl: String = "",
-    val clockIn: Boolean = false
 )

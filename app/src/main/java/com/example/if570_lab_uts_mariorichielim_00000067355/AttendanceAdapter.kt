@@ -14,7 +14,6 @@ class AttendanceAdapter(private var attendanceList: List<Attendance>) : Recycler
         val dateTextView: TextView = itemView.findViewById(R.id.dateTextView)
         val timeTextView: TextView = itemView.findViewById(R.id.timeTextView)
         val photoImageView: ImageView = itemView.findViewById(R.id.photoImageView)
-        val clockInTextView: TextView = itemView.findViewById(R.id.clockInTextView)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): AttendanceViewHolder {
@@ -26,7 +25,6 @@ class AttendanceAdapter(private var attendanceList: List<Attendance>) : Recycler
         val attendance = attendanceList[position]
         holder.dateTextView.text = attendance.date
         holder.timeTextView.text = attendance.time
-        holder.clockInTextView.text = if (attendance.clockIn) "Clocked In" else "Not Clocked In"
         Glide.with(holder.itemView.context)
             .load(attendance.photoUrl)
             .into(holder.photoImageView)
