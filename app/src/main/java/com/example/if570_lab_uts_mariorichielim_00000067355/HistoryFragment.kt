@@ -1,6 +1,8 @@
 package com.example.if570_lab_uts_mariorichielim_00000067355
 
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -12,14 +14,20 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
-import java.text.SimpleDateFormat
-import java.util.Locale
 
 class HistoryFragment : Fragment(R.layout.fragment_history) {
 
     private lateinit var firestore: FirebaseFirestore
     private lateinit var recyclerView: RecyclerView
     private lateinit var historyAdapter: AttendanceAdapter
+    private val handler = Handler(Looper.getMainLooper())
+
+    private val historyRunnable = object : Runnable {
+        override fun run() {
+            loadAttendanceHistory()
+            handler.postDelayed(this, 2000)
+        }
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -41,6 +49,16 @@ class HistoryFragment : Fragment(R.layout.fragment_history) {
         loadAttendanceHistory()
     }
 
+    override fun onResume() {
+        super.onResume()
+        handler.post(historyRunnable)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        handler.removeCallbacks(historyRunnable)
+    }
+
     fun refreshAttendanceHistory() {
         loadAttendanceHistory()
     }
@@ -59,46 +77,65 @@ class HistoryFragment : Fragment(R.layout.fragment_history) {
         FirebaseStorage.getInstance().reference.child(storagePath).listAll()
             .addOnSuccessListener { result ->
                 val attendanceList = mutableListOf<Attendance>()
-
-                val inputDateFormat = SimpleDateFormat("yyyyMMdd", Locale.getDefault())
-                val outputDateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-                val inputTimeFormat = SimpleDateFormat("HHmmss", Locale.getDefault())
-                val outputTimeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
+                var processedItems = 0
 
                 for (fileRef in result.items) {
                     val fileName = fileRef.name
-                    val parts = fileName.split("_")
-                    if (parts.size >= 6) {
-                        val date = parts[2]
-                        val time = parts[3]
+                    val date: String
+                    val time: String
 
-                        val parsedDate = inputDateFormat.parse(date)
-                        val formattedDate = outputDateFormat.format(parsedDate)
+                    if (fileName.contains("clock_in")) {
+                        date = fileName.substringBefore("_clock_in").takeLast(15).substring(0, 4) + "-" +
+                                fileName.substringBefore("_clock_in").takeLast(15).substring(4, 6) + "-" +
+                                fileName.substringBefore("_clock_in").takeLast(15).substring(6, 8)
+                        time = fileName.substringBefore("_clock_in").takeLast(6).substring(0, 2) + ":" +
+                                fileName.substringBefore("_clock_in").takeLast(6).substring(2, 4)
+                    } else if (fileName.contains("clock_out")) {
+                        date = fileName.substringBefore("_clock_out").takeLast(15).substring(0, 4) + "-" +
+                                fileName.substringBefore("_clock_out").takeLast(15).substring(4, 6) + "-" +
+                                fileName.substringBefore("_clock_out").takeLast(15).substring(6, 8)
+                        time = fileName.substringBefore("_clock_out").takeLast(6).substring(0, 2) + ":" +
+                                fileName.substringBefore("_clock_out").takeLast(6).substring(2, 4)
+                    } else {
+                        processedItems++
+                        continue
+                    }
 
-                        val parsedTime = inputTimeFormat.parse(time)
-                        val formattedTime = outputTimeFormat.format(parsedTime)
-
-                        fileRef.downloadUrl.addOnSuccessListener { uri ->
-                            attendanceList.add(Attendance(date = formattedDate, time = formattedTime, photoUrl = uri.toString()))
+                    fileRef.downloadUrl.addOnSuccessListener { uri ->
+                        attendanceList.add(Attendance(date = date, time = time, photoUrl = uri.toString()))
+                        processedItems++
+                        if (processedItems == result.items.size) {
+                            updateAdapter(attendanceList)
+                        }
+                    }.addOnFailureListener {
+                        processedItems++
+                        if (processedItems == result.items.size) {
+                            updateAdapter(attendanceList)
                         }
                     }
                 }
 
-                val hardcodedAttendanceList = listOf(
-                    Attendance(date = "2024-10-01", time = "08:00", photoUrl = "https://dummyimage.com/800x600/ff0000/fff"),
-                    Attendance(date = "2024-10-01", time = "10:00", photoUrl = "https://dummyimage.com/700x500/ff6600/fff"),
-                    Attendance(date = "2024-10-05", time = "14:00", photoUrl = "https://dummyimage.com/800x600/ff0000/fff"),
-                    Attendance(date = "2024-10-05", time = "18:05", photoUrl = "https://dummyimage.com/450x350/00cccc/000"),
-                    Attendance(date = "2024-10-10", time = "12:10", photoUrl = "https://dummyimage.com/750x550/996633/fff")
-                )
-                attendanceList.addAll(hardcodedAttendanceList)
-
-                attendanceList.sortWith(compareByDescending<Attendance> { it.date }.thenByDescending { it.time })
-
-                historyAdapter.updateData(attendanceList)
+                if (result.items.isEmpty()) {
+                    updateAdapter(attendanceList)
+                }
             }
             .addOnFailureListener {
                 Toast.makeText(context, "Failed to load attendance history", Toast.LENGTH_SHORT).show()
             }
+    }
+
+    private fun updateAdapter(attendanceList: MutableList<Attendance>) {
+        val hardcodedAttendanceList = listOf(
+            Attendance(date = "2024-10-01", time = "08:00:00", photoUrl = "https://dummyimage.com/800x600/ff0000/fff"),
+            Attendance(date = "2024-10-01", time = "10:00:00", photoUrl = "https://dummyimage.com/700x500/ff6600/fff"),
+            Attendance(date = "2024-10-05", time = "14:00:00", photoUrl = "https://dummyimage.com/800x600/ff0000/fff"),
+            Attendance(date = "2024-10-05", time = "18:05:34", photoUrl = "https://dummyimage.com/450x350/00cccc/000"),
+            Attendance(date = "2024-10-10", time = "12:05:21", photoUrl = "https://dummyimage.com/750x550/996633/fff")
+        )
+        attendanceList.addAll(hardcodedAttendanceList)
+
+        attendanceList.sortWith(compareByDescending<Attendance> { it.date }.thenByDescending { it.time })
+
+        historyAdapter.updateData(attendanceList)
     }
 }

@@ -57,6 +57,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
     private val timeUpdateRunnable = object : Runnable {
         override fun run() {
             updateTime()
+            loadAttendanceStatus()
             handler.postDelayed(this, 1000)
         }
     }
@@ -87,9 +88,6 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         timeTextView.text = currentTime
 
         loadAttendanceStatus()
-
-        val historyFragment = parentFragmentManager.findFragmentById(R.id.historyFragment) as? HistoryFragment
-        historyFragment?.refreshAttendanceHistory()
 
         requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
             if (isGranted) {
@@ -270,6 +268,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             }
     }
 
+    // HomeFragment.kt
     private fun uploadAbsensi() {
         val user = FirebaseAuth.getInstance().currentUser
         if (user == null) {
@@ -342,21 +341,32 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             return
         }
 
-        val email = user.email?.replace(".", "_") ?: "unknown_user"
-        val attendanceRef = storage.collection("attendance").document(email).collection("status").document(currentDate)
+        val userName = user.email?.replace(".", "_") ?: "unknown_user"
+        val currentDate = SimpleDateFormat("yyyyMMdd", Locale.getDefault()).format(Date())
+        val storagePath = "absensi/${userName}/"
 
-        attendanceRef.get()
-            .addOnSuccessListener { document ->
-                if (document.exists()) {
-                    clockInTime = document.getString("clockInTime") ?: "-"
-                    clockOutTime = document.getString("clockOutTime") ?: "-"
-                } else {
-                    clockInTime = "-"
-                    clockOutTime = "-"
+        Log.d("HomeFragment", "Checking attendance status for user: $userName on date: $currentDate")
+
+        storageRef.reference.child(storagePath).listAll()
+            .addOnSuccessListener { result ->
+                var clockInTime: String? = null
+                var clockOutTime: String? = null
+
+                for (fileRef in result.items) {
+                    val fileName = fileRef.name
+                    Log.d("HomeFragment", "Found file: $fileName")
+                    if (fileName.contains(currentDate) && fileName.contains("clock_in")) {
+                        clockInTime = fileName.substringBefore("_clock_in").takeLast(6).substring(0, 2) + ":" + fileName.substringBefore("_clock_in").takeLast(6).substring(2, 4)
+                        Log.d("HomeFragment", "Clock-in file found: $fileName")
+                    }
+                    if (fileName.contains(currentDate) && fileName.contains("clock_out")) {
+                        clockOutTime = fileName.substringBefore("_clock_out").takeLast(6).substring(0, 2) + ":" + fileName.substringBefore("_clock_out").takeLast(6).substring(2, 4)
+                        Log.d("HomeFragment", "Clock-out file found: $fileName")
+                    }
                 }
 
-                clockInTextView.text = getString(R.string.clock_in, clockInTime)
-                clockOutTextView.text = getString(R.string.clock_out, clockOutTime)
+                clockInTextView.text = getString(R.string.clock_in, clockInTime ?: "-")
+                clockOutTextView.text = getString(R.string.clock_out, clockOutTime ?: "-")
             }
             .addOnFailureListener { e ->
                 Log.e("HomeFragment", "Error loading attendance status", e)
